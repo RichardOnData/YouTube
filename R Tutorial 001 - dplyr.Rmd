@@ -1,0 +1,161 @@
+---
+title: "R Tutorial 001: dplyr"
+author: "RichardOnData"
+date: "8/20/2020"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r Load Libraries}
+#install.packages(tidyverse)
+#install.packages(nycflights13)
+library(tidyverse) # This will include the "dplyr" package
+library(nycflights13)
+```
+
+We will explore the "dplyr" package of the tidyverse.  In this tutorial we will examine the following functions, along with the associated cheat sheet.   
+
+1) filter()
+2) arrange()
+3) select()
+4) rename()
+5) mutate() and extensions
+6) group_by
+7) summarize()
+8) left_join()
+
+Please note that code in this tutorial was adapted from Chapters 5 and 13 of the book "R for Data Science" by Hadley Wickham and Garrett Grolemund.  The full book can be found at: https://r4ds.had.co.nz/#
+
+A good cheat sheet for dplyr functions can be found at: https://4.files.edl.io/b9e2/07/12/19/142839-a23788fb-1d3a-4665-9dc4-33bfd442c296.pdf 
+
+```{r Load Data}
+flights <- flights
+airlines <- airlines
+```
+
+### Filter ###
+
+We can use the `filter()` function to filter rows of our datasets based on specified conditions.  Think of this like the WHERE clause in SQL.
+
+Note that we use the "pipe" operator `%>%` here.   This is a fairly straightforward syntax associated with the tidyverse.  You can essentially read this like the word "then".   In the example below, take the dataset called "flights", and then filter it.  Multiple operations can be piped together as we will see later.
+
+```{r Example of "filter"}
+flights %>%
+  dplyr::filter(month == 1 | month == 2, day == 1)
+```
+
+Next, we will pipe multiple operations together:
+
+```{r Longer example of "filter"}
+flightsFiltered <- flights %>%
+  dplyr::filter(month %in% c(11, 12)) %>%
+  dplyr::filter(dep_time >= 700) %>%
+  dplyr::filter(carrier != "UA")
+flightsFiltered
+```
+
+<br>
+
+### Arrange ###
+
+The `arrange()` function can be used to sort a data frame.   Multiple variables can be taken in to this function, and the `desc()` helper function can be used to specify descending rather than ascending order.   Think of this like the ORDER BY clause of SQL.
+
+```{r Example of "arrange"}
+flightsArranged <- flightsFiltered %>%
+  arrange(year, month, day, desc(dep_delay))
+flightsArranged
+```
+
+<br>
+
+### Select, rename ###
+
+The `select()` function can be used to select variables (i.e. columns) of the dataset.   A "-" sign can be used to remove columns.
+The `rename()` function can be used to change the names of variables of the dataset.
+
+```{r Examples of "select" and "rename"}
+flightsSelected <- flightsArranged %>%
+  dplyr::select(-(hour:time_hour)) %>%
+  dplyr::select(flight, year, month, day, dep_time, dep_delay, arr_time, arr_delay, carrier, origin, dest, air_time, distance) %>%
+  dplyr::rename("airtime" = "air_time", "destination" = "dest")
+flightsSelected
+```
+
+<br>
+
+### Mutate ###
+
+The `mutate()` function can be used to create new variables. 
+
+```{r Example of "mutate"}
+flightsMutated <- flightsSelected %>%
+  mutate(gain = dep_delay - arr_delay,
+         hours = airtime / 60,
+         gain_per_hour = gain/hours)
+flightsMutated
+```
+
+There are various extensions of the mutate function.  The old helper functions were called `mutate_at()` and `mutate_all()`, which can be used to modify multiple variables at a time.  The arguments to these functions were .vars and .funs.
+Recently, there is the new `across()` function which will take in arguments .cols and .fns.  This is the recommended way of extending the `mutate()` function.
+
+```{r Extensions of "mutate"}
+flights2a <- flightsMutated %>%
+  mutate_at(.vars = c("year", "month", "day"), .funs = as.character)
+flights2b <- flightsMutated %>%
+  mutate(across(.cols = c("year", "month", "day"), .fns = as.character))
+  
+flights3a <- flightsMutated %>%
+  mutate_all(.funs = as.character)
+flights3b <- flightsMutated %>%
+  mutate(across(.cols = everything(), .fns = as.character))
+
+# Check that these return the same result
+identical(flights2a, flights2b)
+identical(flights3a, flights3b)
+```
+<br>
+
+### Group by, summarize ###
+
+The `group_by()` function creates a "grouped" dataset, to which many of the functions described above can be used.
+Most commonly, `group_by()` is used in conjunction with the `summarize()` function, which enables a function to be applied to the grouped dataset.   Here we will see the `mean()` function.
+
+```{r Group by, summarize}
+meanDelays <- flightsMutated %>%
+  group_by(carrier) %>%
+  dplyr::summarize(meanDelay = mean(dep_delay, na.rm = TRUE)) %>%
+  arrange(desc(meanDelay))
+meanDelays
+```
+
+Another common function used with `summarize()` is the count function `n()`.   
+Alternatively the function `tally()` can be used - this is a wrapper for `summarize(n = n())`. 
+
+```{r Tally}
+carrierCounts <- flightsMutated %>%
+  group_by(carrier) %>%
+  dplyr::summarize(n = n()) %>%   # Equivalent: tally()
+  arrange(desc(n))
+carrierCounts
+```
+<br>
+
+### Join ###
+
+Lastly we will see a join function.  
+We will use `left_join()` here, but note there are many other types: `inner_join`, `right_join`, `full_join`, `semi_join`, and `anti_join`.
+
+```{r Join example}
+airlineNames <- meanDelays %>%
+  left_join(airlines, by = c("carrier" = "carrier")) %>%
+  dplyr::select(name, carrier, meanDelay)
+airlineNames
+```
+
+This will give you the foundation for the "dplyr" package and most of the helpful functionalities the package has to offer.   However, there are several more that you can reference at the cheat sheet.
+
