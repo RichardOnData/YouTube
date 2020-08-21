@@ -44,6 +44,8 @@ We can use the `filter()` function to filter rows of our datasets based on speci
 
 Note that we use the "pipe" operator `%>%` here.   This is a fairly straightforward syntax associated with the tidyverse.  You can essentially read this like the word "then".   In the example below, take the dataset called "flights", and then filter it.  Multiple operations can be piped together as we will see later.
 
+Also note that the prefix "dplyr::" will be used in front of some functions, because some of these functions exist in other packages.
+
 ```{r Example of "filter"}
 flights %>%
   dplyr::filter(month == 1 | month == 2, day == 1)
