@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warnings = FALSE)
 ```
 
 ```{r Load Libraries}
@@ -155,6 +155,7 @@ monteCarloT(nrep = nrep, nsim = nsim, x = "rnorm(50, 100, 5)", y = "rnorm(50, 10
 rho <- 0.07
 n1 <- 10
 n2 <- 10
+crit <- qt(0.975, 50 + 50 - 2)
 
 Sx <- rho*matrix(1, ncol = n1, nrow = n1) + diag(rep(1 - rho, n1))
 Sy <- rho*matrix(1, ncol = n2, nrow = n2) + diag(rep(1 - rho, n2))

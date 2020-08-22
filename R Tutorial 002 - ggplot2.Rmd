@@ -35,7 +35,7 @@ The following components can also optionally be added:
 
 Please note that code in this tutorial was adapted from Chapters 3 of the book "R for Data Science" by Hadley Wickham and Garrett Grolemund.  The full book can be found at: https://r4ds.had.co.nz/#
 
-A good cheat sheet for dplyr functions can be found at: https://rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf
+A good cheat sheet for ggplot2 functions can be found at: https://rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf
 
 Let's create an extremely simple scatterplot.   We will use the function `ggplot()` to do this. 
 The format of any ggplot graph is this function, followed by another function to add objects.
@@ -74,6 +74,7 @@ Lastly, let's examine other objects that we can plot using `ggplot()`.  We will 
 ggplot(mpg) +
   geom_bar(aes(x = class))
 ```
+
 <br>
 
 With the `geom_bar()` function, we have a great use-case for a stat transformation.
@@ -83,6 +84,7 @@ The following code can be used to convert these counts to proportions:
 ggplot(mpg) +
   geom_bar(aes(x = class, y = stat(prop), group = 1))
 ```
+
 <br>
 
 Next, let's create a histogram with the `geom_histogram()` function.
@@ -91,12 +93,14 @@ Next, let's create a histogram with the `geom_histogram()` function.
 ggplot(mpg) +
   geom_histogram(aes(x = hwy))
 ```
+
 The `geom_histogram()` function accepts the argument "binwidth", and has two key arguments for color: fill (this controls the overall color), and color (this controls the border).   Let's fill all these in.
 
 ```{r Graph 7}
 ggplot(mpg) +
   geom_histogram(aes(x = hwy), binwidth = 5, fill = "navy", color = "gold")
 ```
+
 <br>
 
 `geom_histogram()` provides a great example to modify the scale.
@@ -110,6 +114,7 @@ ggplot(mpg) +
   scale_x_continuous(breaks = seq(0, 45, 5), limits = c(0, 50), expand = c(0,0)) +
   scale_y_continuous(breaks = seq(0, 90, 10), limits = c(0, 90), expand = c(0,0))
 ```
+
 <br>
 
 Next, we will create boxplots.
@@ -119,6 +124,7 @@ p <- ggplot(mpg) +
   geom_boxplot(aes(x = class, y = cty, fill = class))
 p
 ```
+
 <br>
 
 One helpful tool for breaking multiple graphs down by another variable is the facet.   We can do this with the `facet_wrap()`.
@@ -141,6 +147,7 @@ ggplot(mpg) +
   labs(title = "Cylinders by Class", fill = "cylinders") +
   coord_flip()
 ```
+
 <br>
 
 These bars are stacked on top of each of other, due to the "cyl" variable being mapped to the "fill" argument.   There are various position adjustments that can be used.  Again, most of these are not very common, but a common one is the argument "position = 'dodge'", which will put items side-by-side.   See this example:
@@ -166,6 +173,7 @@ p + theme(axis.ticks = element_line(linetype = "blank"),
     plot.title = element_text(size = 14,
         face = "bold", hjust = 0.5)) +labs(title = "Boxplot Example")
 ```
+
 <br>
 
 There are many more examples of things that can be done with ggplot2.   It is an amazingly powerful and flexible package, and it is worth getting acquainted with the cheat sheet.
