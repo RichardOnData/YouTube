@@ -27,7 +27,7 @@ We will explore the "tidyr" package of the tidyverse.  In this tutorial we will 
 
 Please note that code in this tutorial was heavily adapted from Chapter 12 of the book "R for Data Science" by Hadley Wickham and Garrett Grolemund.  The full book can be found at: https://r4ds.had.co.nz/#
 
-A good cheat sheet for dplyr functions can be found at: https://rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf
+A good cheat sheet for tidyr functions can be found at: https://rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf
 
 Please note however the cheat sheet references older functions `gather()` and `spread()`.   However, these functions are retired in favor of newer functions `pivot_longer()` and `pivot_wider()` now.
 
