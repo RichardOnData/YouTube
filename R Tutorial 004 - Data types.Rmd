@@ -206,7 +206,7 @@ dataset[1:20,]
 ##### Lists #####
 
 A list is a type of vector -- however, it is different from atomic vectosr, in the sense that elements are not required to be of the same type.   For instance, you can have a list with numerics, logicals, and factors.    You can have a list of data frames.   You can have a list mixing numeric elements and data frames.   You can even have a list of lists!
-
+list
 ```{r List examples}
 list1 <- list(3, TRUE, as.factor(1))
 list2 <- list(flights, dataset)
