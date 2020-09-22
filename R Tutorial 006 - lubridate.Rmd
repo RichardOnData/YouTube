@@ -152,7 +152,7 @@ The definition of these three classes are as follows:
 * Periods measure the change in clock time that occurs between two instants.
 * Intervals are timespans representing a start and an end point.
 
-Let's see the difference with the year 2016.
+Let's see the difference within the month March 2020.
 
 ```{r Creating a difftime object}
 startDate <- as_datetime("2020-03-01 00:00:00")
