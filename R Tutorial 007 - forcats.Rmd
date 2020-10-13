@@ -1,0 +1,232 @@
+---
+title: "R Tutorial 007: forcats"
+author: "RichardOnData"
+date: "10/3/2020"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r Load Libraries}
+library(tidyverse)
+```
+
+We will explore the "forcats" package of the tidyverse.  In this tutorial we will examine the following things:
+
+1) Factors and their levels
+2) Modifying factor order
+3) Modifying factor levels
+
+Please note that some of the code in this tutorial was adapted from Chapter 15 of the book "R for Data Science" by Hadley Wickham and Garrett Grolemund.  The full book can be found at: https://r4ds.had.co.nz/#
+
+A good cheat sheet for forcats functions can be found at: https://rstudio.com/resources/cheatsheets/ 
+
+Another good tutorial for forcats: https://www.r-bloggers.com/2020/06/working-with-factors-in-r-tutorial-forcats-package/ 
+
+### Factors and their levels ###
+
+Let's look at the motivation for factors.   
+
+```{r Define strings}
+x1 <- c("Dec", "Apr", "Mar", "Jan")
+x2 <- c("Dec", "Apr", "Mar", "Jam")   # This has a typo
+```
+
+It is important to define the levels of factors.   Because we are looking at month variables, our levels are the various months.
+
+```{r Define levels}
+month_levels <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+```
+
+Now let's see what happens when we pass these levels to the levels argument of the `factor()` function.
+
+```{r Passing levels to factor() function}
+y1 <- factor(x1, levels = month_levels)
+y1
+
+y2 <- factor(x2, levels = month_levels)
+y2
+```
+
+Notice that in the `y2` factor, the "Jam" typo has been dropped.
+
+By default, if you create a factor variable but do not specify the levels, the levels will be in alphabetical order.
+
+```{r Factor in alphabetical order}
+f1 <- factor(x1)
+f1
+```
+
+Alternatively, you can use the `unique()` function in the following, and the levels will be ordered in the order they appear in the data:
+
+```{r Factor with levels in order of appearance}
+o1 <- factor(x1, levels = unique(x1))
+o1
+```
+
+It is clearest to see how important the order of levels is in graphs.   Let's generate some fake data as "counts" and generate some bar charts to see the real-world impact of the order of factor levels.
+
+```{r Generate fake data}
+set.seed(36)
+counts <- rnorm(4, 50, 10)
+```
+
+```{r Bar chart - ordered data}
+orderedData <- data.frame(Month = y1, Count = counts)
+ggplot(orderedData) +
+  geom_bar(aes(x = Month, y = Count), stat = "identity")
+```
+
+```{r Bar chart - alphabetical data}
+alphabeticalData <- data.frame(Month = f1, Count = counts)
+ggplot(alphabeticalData) +
+  geom_bar(aes(x = Month, y = Count), stat = "identity")
+```
+
+```{r Bar chart - first appearance data}
+firstAppearanceData <- data.frame(Month = o1, Count = counts)
+ggplot(firstAppearanceData) +
+  geom_bar(aes(x = Month, y = Count), stat = "identity")
+```
+
+<br>
+
+### Modifying factor order ###
+
+The forcats package has a number of helper functions, most of which involve either modifying the order of factor levels, or the levels themselves.   We will start the factor order.   We will use the dataset `gss_cat` which is built into the forcats package.  Let's start with the `count()` function.   This is essentially a wrapper for the combination of `group_by()` followed by `tally()`, from the dplyr package.    We will create and look at a new data frame, then create a tally by level of the variable "marital".
+
+```{r count function}
+data <- gss_cat
+head(data)
+
+data %>%
+  count(marital)
+```
+
+Alternatively, you can use the `add_count()` function to add these directly to the original data.
+
+```{r add_count example}
+data %>%
+  add_count(marital, name = "MaritalCount")
+```
+
+Let's look at a simple bar chart of this variable.
+
+```{r marital bar chart}
+data %>%
+  ggplot() +
+  geom_bar(aes(x = marital))
+```
+
+Notice these are out of order.   We can use the `fct_infreq()` to reorder the levels of the factor from most to least frequent:
+
+```{r fct_infreq function}
+data %>%
+  ggplot() +
+  geom_bar(aes(x = fct_infreq(marital)))
+```
+
+However, you may wish to have these in reverse order.  We can use the `fct_rev()` function to reverse the current order of factor levels; thus these functions work incredibly well together.   We will use the `mutate()` function to alter the actual data.
+
+```{r fct_rev function}
+data %>%
+  mutate(marital = marital %>% fct_infreq() %>% fct_rev()) %>%
+  ggplot() +
+  geom_bar(aes(x = marital))
+```
+
+Next, we are going to use the `fct_reorder()` function, which helps to change the order of the levels of factors by another variable.   We will do this with the variable "relig", and start by creating a summary dataframe based on this variable.
+
+```{r Create relig_summary dataframe}
+relig_summary <- data %>%
+  group_by(relig) %>%
+  summarise(
+    age = mean(age, na.rm = TRUE),
+    tvhours = mean(tvhours, na.rm = TRUE),
+    n = n()
+  )
+relig_summary
+```
+
+Let's create a scatterplot of TV hours by religion to see a relationship:
+
+```{r Unordered scatterplot}
+ggplot(relig_summary, aes(tvhours, relig)) + geom_point()
+```
+
+Let's rearrange using the `fct_reorder()` function:
+
+```{r Ordered scatterplot}
+ggplot(relig_summary, aes(tvhours, fct_reorder(relig, tvhours))) + geom_point()
+```
+
+Now let's suppose, however, that we want to move one or more specific levels.   The `fct_relevel()` function can help with this.   We will move the "No answer" category to the end.
+
+```{r Ordered and releveled scatterplot}
+relig_summary <- relig_summary %>%
+  mutate(relig = fct_reorder(relig, tvhours)) %>%
+  mutate(relig = fct_relevel(relig, "No answer"))
+ggplot(relig_summary, aes(tvhours, relig)) + geom_point()
+```
+
+<br>
+
+### Modifying factor levels ###
+
+Next, we can actually recode and modify the levels of factors.   Let's look at the "partyid" variable.
+
+```{r partyid variable}
+data %>% 
+  count(partyid)
+```
+
+Notice there are many levels of these factors.  We can change the names of these levels using the `fct_recode()` function.
+
+```{r fct_recode example}
+data <- data %>%
+  mutate(partyid = fct_recode(partyid,
+    "Republican, strong"    = "Strong republican",
+    "Republican, weak"      = "Not str republican",
+    "Independent, near rep" = "Ind,near rep",
+    "Independent, near dem" = "Ind,near dem",
+    "Democrat, weak"        = "Not str democrat",
+    "Democrat, strong"      = "Strong democrat"
+  ))
+data %>%
+  count(partyid)
+```
+
+These look a bit better.   Next, we can collapse many levels into fewer using the `fct_collapse()` function.
+
+```{r fct_collapse example}
+data <- data %>%
+  mutate(partyid = fct_collapse(partyid,
+    "other" = c("No answer", "Don't know", "Other party"),
+    "republican" = c("Republican, strong", "Republican, weak"),
+    "independent" = c("Independent, near rep", "Independent", "Independent, near dem"),
+    "democrat" = c("Democrat, weak", "Democrat, strong")))
+data %>%
+  count(partyid)
+```
+
+Lastly, we have helper functions `fct_lump_min()`, `fct_lump_prop()`, `fct_lump_n()`, and `fct_lump_lowfreq()`.   Definitions are as follows:
+
+  * `fct_lump_min()`: lumps levels that appear fewer than min times.
+  * `fct_lump_prop()`: lumps levels that appear in fewer prop * n times.
+  * `fct_lump_n()` lumps all levels except for the n most frequent (or least frequent if n < 0)
+  * `fct_lump_lowfreq()` lumps together the least frequent levels, ensuring that "other" is still the smallest level.
+
+Let's see an example with the `fct_lump_n()` function:
+
+```{r fct_lump_n function}
+data %>%
+  mutate(marital = fct_lump_n(marital, n = 3)) %>%
+  count(marital)
+```
+
+This leaves the top three levels by frequency, and lumps everything else together into the "Other" category.

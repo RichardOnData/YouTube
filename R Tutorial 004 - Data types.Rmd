@@ -1,0 +1,221 @@
+---
+title: "R Tutorial 004: Data types"
+author: "RichardOnData"
+date: "9/5/2020"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r Load Libraries}
+library(tidyverse)
+library(nycflights13)
+```
+
+We will explore the various data and object types in R, using a derivative of the `flights` dataset from the package "nycflights13".   We will cover various datatypes: characters, numerics, integers, logicals, factors, and datetimes.  We will also cover the following structures: atomic vectors, matrices, data frames, arrays, tibbles, and lists.   This is not a comprehensive list of all the different data and object types in R, but it will cover many of the most common examples.
+
+An excellent resource for these topics is Chapter 3 of the book "Advanced R" by Hadley Wickham: https://adv-r.hadley.nz/vectors-chap.html 
+
+```{r Create Dataset}
+dataset <- flights %>%
+  mutate(monthFactor = factor(month),
+         bigfour = ifelse(carrier %in% c("UA", "AA", "DL", "WN"), T, F),
+         air_time = air_time - 0.5)
+```
+
+<br>
+
+### Data types ###
+
+##### Characters #####
+
+Let's start with characters.   These are the most flexible datatype of all.   If you hear the terms "character" or "string", these are interchangeable.  Note that R is a great tool for text analysis, natural language processing, and web scraping, so the character type is super useful in these contexts.  Here is a sample from the data:
+
+```{r Character example}
+summary(dataset$tailnum)
+dataset$tailnum[1:20]
+```
+
+<br>
+
+##### Numerics and integers #####
+
+Next, let's look at numerics and integers.    Those of you with programming backgrounds are probably familiar with the term "double".   "Numeric" essentially means "double or integer", though both of these exist separately.   The simple difference is that doubles permit decimals, and integers are literally integers -- that is, whole numbers without decimals.   Let's look at the `air_time` and `arr_time` variables just to see a contrast.
+
+`air_time`:
+
+```{r Numeric example}
+summary(dataset$air_time)
+dataset$air_time[1:20]
+```
+
+`arr_time`:
+
+```{r Integer example}
+summary(dataset$arr_time)
+dataset$arr_time[1:20]
+```
+
+<br>
+
+##### Logicals #####
+
+Logicals are an even less flexible form of data, which can take on two forms: true, or false.   Let's see an example with the variable created at the top called `bigfour`, which was set to be TRUE if the carrier was United, American, Delta, or Southwest, but FALSE otherwise.
+
+```{r Logical example}
+summary(dataset$bigfour)
+dataset$bigfour[1:20]
+```
+
+<br>
+
+##### Factors #####
+
+Factors are a very important type of data in R.   Basically, an integer is stored, and each of these integers has a label.  They have a number of useful cases, but it is easiest to see this example in the case of an integer variable that's technically discrete.
+
+Factor version of `month` variable:
+
+```{r Factor example}
+str(dataset$monthFactor)
+summary(dataset$monthFactor)
+```
+
+Numeric version of `month` variable:
+
+```{r Contrast with a factor}
+str(dataset$month)
+summary(dataset$month)
+```
+
+Compare and contrast the summary output for the factor variable compared to the integer variable.   It makes much more sense for this variable "month" to return the counts by month, rather than a 5-number summary which doesn't really make any sense.   This is particularly useful for situations like visualizations where a numerical scale for a variable like "month" makes no sense at all.   There is an entire package for factors in the tidyverse called "forcats".
+
+<br>
+
+##### Datetimes #####
+
+The POSIXct is R's most common class for calendar datetimes.   It basically stores the number of seconds since a particular origin (specifically, 1970-01-01 00:00:00 UTC).   There is also the POSIXlt class, which stores a list of various attributes like the year, month, day, hour, minutes, and seconds.   Both will display datetimes.
+
+```{r POSIXct example}
+str(dataset$time_hour)
+```
+
+Encoded in this data is the time zone.   
+
+```{r POSIXct time zones}
+as.POSIXct(dataset$time_hour, tz = "EST")[1:4]
+as.POSIXlt(dataset$time_hour, tz = "GMT")[1:4]
+```
+
+Again, there is a full package in the tidyverse for dealing with datetimes called "lubridate".
+
+One can commonly switch between one datatype and another by using the `as.` family of functions.  Similarly, one can check if a variable is of the expected datatype by using the `is.` family of functions.  As a general rule, this is reliable when you are going from one type of variable to one that's more flexible.   For example, characters are the most flexible data form.   
+
+```{r Examples of "as." and "is." functions}
+is.character(4)
+is.character("4")
+as.character(4)
+as.numeric("character string")
+```
+
+<br>
+
+### Structures ###
+
+##### Atomics #####
+
+An atomic vector contains elements that are OF THE SAME TYPE.   Everything you have seen thus far is an atomic vector.   You can create vectors with the concatenate function, called `c()`.
+
+```{r Vector examples}
+vectorChar <- c("Char1", "Char2", "Char3")
+vectorNum <- c(1, 2, 3)
+
+vectorChar
+vectorNum
+```
+
+<br>
+
+##### Matrices #####
+
+Atomic vectors were one-dimensional.   A two-dimensional extension of this idea is the matrix - think of this as a table which also contains elements that are of the same type.
+
+```{r Matrix examples}
+matrixChar <- matrix(c("Char1", "Char2", "Char3", "Char4"), nrow = 2, ncol = 2)
+matrixNumbers <- matrix(1:24, nrow = 3, ncol = 8)
+
+matrixChar
+matrixNumbers
+```
+
+You can access rows and columns of matrices as follows:
+
+```{r Accessing rows and columns}
+matrixNumbers[1,]
+matrixNumbers[,3]
+```
+
+<br>
+
+##### Data frames #####
+
+A data frame is more flexible than a matrix, because columns do NOT need to be of the same data type.  This is probably the most common type of structure for tabular data.
+
+```{r Data frame example}
+dfExample <- data.frame(dataset)
+dfExample[1:20,]
+```
+
+<br>
+
+##### Arrays #####
+
+An array is a vector with multiple dimensions.   A one-dimensional array is essentially a vector; a two-dimensional array is a matrix.   This concept can also be extended into further dimensions.   These might not be as common for you as things like matrices and data frames, but you may see them as output and it is important to be aware of their existence.
+
+Example 1:
+
+```{r Array example 1}
+array(matrixNumbers, dim = c(2, 3, 4), dimnames = list(c("Row 1", "Row 2"),
+      c("Column 1", "Column 2", "Column 3"),
+      c("Matrix 1", "Matrix 2", "Matrix 3", "Matrix 4")))
+```
+
+Example 2:
+
+```{r Array example 2}
+array(matrixNumbers, dim = c(4, 3, 2), dimnames = list(c("Row 1", "Row 2", "Row 3", "Row 4"),
+      c("Column 1", "Column 2", "Column 3"),
+      c("Matrix 1", "Matrix 2")))
+```
+
+<br>
+
+##### Tibbles #####
+
+A tibble is a special type of data frame that is unique to the tidyverse.  This is extremely similar, except it cleans up how output is printed.   It will limit output to only 10 rows, and in addition, it will include the variable type under the column name.
+
+```{r Tibble example}
+dataset[1:20,]
+```
+
+<br>
+
+##### Lists #####
+
+A list is a type of vector -- however, it is different from atomic vectosr, in the sense that elements are not required to be of the same type.   For instance, you can have a list with numerics, logicals, and factors.    You can have a list of data frames.   You can have a list mixing numeric elements and data frames.   You can even have a list of lists!
+list
+```{r List examples}
+list1 <- list(3, TRUE, as.factor(1))
+list2 <- list(flights, dataset)
+list3 <- list(1, 4, flights)
+list4 <- list(list1, list2, list3)
+```
+
+This can be an incredibly helpful way of storing data in a very flexible fashion.  For example, lots of complex functions and model outputs will return lists, because they can return all different types of information in one singular piece of output.   Actually, technically, a data frame is a list of vectors that are of equal length.
+
+<br>
+
+This is an overview of some of the most important and common data and structure types in R.   I will stress again that this is not a comprehensive overview of all of them.   Additionally, many packages will introduce new classes.   However, this should give you an idea about many of the most important items and hopefully help you to work with these classes and think about them more easily!

@@ -1,0 +1,219 @@
+---
+title: "The Truth About t-Tests"
+author: "RichardOnData"
+date: "7/16/2020"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warnings = FALSE)
+```
+
+```{r Load Libraries}
+library(MASS) # needed for the multivariate normal function
+```
+
+```{r Global Parameters}
+seed <- 123 # seed for reproducibility
+nrep <- 5000 # number of repetitions for one simulation -- this gives us ONE estimate of a Type 1 error rate
+nsim <- 100 # number of simulations to run -- this provides us a distribution of estimates of Type 1 error
+```
+
+Let us examine the two sample t-test.  The assumptions of t-tests are as follows:
+
+1) Samples are taken from normally distributed populations
+  - If not, we may get around this with the Central Limit Theorem, if the size of the sample is ~25-30+.
+2) The populations have equal variance
+3) Data within these samples are independent
+4) The samples are independent of one another
+
+We will use simulation to determine if these assumptions are truly meaningful using the following seven cases:
+
+1) Two N(100, 10) samples of size 10
+2) Two Uniform(0, 100) samples of size 10
+3) Two Exp(0.01) samples of size 10
+4) N(100, 10) and N(100, 20) samples of size 50
+5) N(100, 5) and N(100, 25) samples of size 50
+6) Independent samples of size 10 from N(100, 10), correlation of 0.7 within samples
+7) Two samples from N(100, 10), correlation of 0.7 between samples
+
+```{r T-Statistic function}
+tStat <- function(x, y, pool = TRUE) {
+  n1 <- length(x)
+  n2 <- length(y)
+  
+  # If variances of the samples are assumed equal, calculate a pooled standard error
+  if(pool == TRUE){
+    sp <- sqrt(((n1 - 1) * sd(x)^2 + (n2 - 1) * sd(y)^2) / (n1 + n2 - 2))
+    t <- (mean(x) - mean(y)) / (sp * sqrt(1/n1 + 1/n2))
+  }
+  
+  if(pool == FALSE){
+    t <- (mean(x) - mean(y)) / sqrt((sd(x)^2 / n1) + sd(y)^2 / n2)
+  }
+  
+  # Return t-statistic
+  return(t)
+}
+```
+
+```{r Define Monte Carlo simulation function}
+monteCarloT <- function(nrep, nsim, x, y, crit, pool){
+  
+  values <- numeric(length = nrep)
+  prob <- numeric(length = nsim)
+
+  for (i in 1:nsim) {
+    for (j in 1:nrep) {
+      
+    # Store values of t-test statistics
+    values[j] <- tStat(x = eval(parse(text = x)), y = eval(parse(text = y)), pool = pool)
+    }
+    
+    # Calculate ratio of values above/below critical value -- this is Type I error rate
+    prob[i] <- length(values[values > crit | values < - crit]) / length(values)
+  }
+  
+  # Return Type 1 error rate and corresponding standard error
+  p <- mean(prob)
+  se <- sd(prob) / sqrt(nsim)
+  
+  return(list(estimate = p, stdError = se))
+}
+```
+
+```{r T-Statistic function for correlated data}
+tStatCorr <- function(x, y, Rx, Ry, pool = TRUE) {
+  
+  # Generate correlated data from independent populations
+  x <- Rx %*% eval(parse(text = x))
+  y <- Ry %*% eval(parse(text = y))
+  
+  n1 <- length(x)
+  n2 <- length(y)
+  
+  # If variances of the samples are assumed equal, calculate a pooled standard error
+  if(pool == TRUE){
+    sp <- sqrt(((n1 - 1) * sd(x)^2 + (n2 - 1) * sd(y)^2) / (n1 + n2 - 2))
+    t <- (mean(x) - mean(y)) / (sp * sqrt(1/n1 + 1/n2))
+  }
+  
+  if(pool == FALSE){
+    t <- (mean(x) - mean(y)) / sqrt((sd(x)^2 / n1) + sd(y)^2 / n2)
+  }
+  
+  # Return t-statistic
+  return(t)
+}
+```
+
+### Two N(100, 10) samples of size 10 ###
+
+```{r Example 1}
+set.seed(seed)
+monteCarloT(nrep = nrep, nsim = nsim, x = "rnorm(10, 100, 10)", y = "rnorm(10, 100, 10)",
+            crit = qt(0.975, 10 + 10 - 2), pool = TRUE)
+```
+
+### Two Uniform(0, 100) samples of size 10 ###
+
+```{r Example 2}
+set.seed(seed)
+monteCarloT(nrep = nrep, nsim = nsim, x = "runif(10, 0, 100)", y = "runif(10, 0, 100)", 
+            crit = qt(0.975, 10 + 10 - 2), pool = TRUE)
+```
+
+### Two Exp(0.01) samples of size 10 ###
+
+```{r Example 3}
+set.seed(seed)
+monteCarloT(nrep = nrep, nsim = nsim, x = "rexp(10, 0.01)", y = "rexp(10, 0.01)", 
+            crit = qt(0.975, 10 + 10 - 2), pool = TRUE)
+```
+
+### N(100, 10) and N(100, 20) samples of size 50 ###
+
+```{r Example 4}
+set.seed(seed)
+monteCarloT(nrep = nrep, nsim = nsim, x = "rnorm(50, 100, 10)", y = "rnorm(50, 100, 20)", 
+            crit = qt(0.975, 50 + 50 - 2), pool = FALSE)
+```
+
+### N(100, 5) and N(100, 25) samples of size 50 ###
+
+```{r Example 5}
+set.seed(seed)
+monteCarloT(nrep = nrep, nsim = nsim, x = "rnorm(50, 100, 5)", y = "rnorm(50, 100, 25)", 
+            crit = qt(0.975, 50 + 50 - 2), pool = FALSE)
+```
+
+### Independent samples of size 10 from N(100, 10), correlation of 0.7 within samples ###
+
+```{r Example 6}
+rho <- 0.07
+n1 <- 10
+n2 <- 10
+crit <- qt(0.975, 50 + 50 - 2)
+
+Sx <- rho*matrix(1, ncol = n1, nrow = n1) + diag(rep(1 - rho, n1))
+Sy <- rho*matrix(1, ncol = n2, nrow = n2) + diag(rep(1 - rho, n2))
+Rx <- chol(Sx)
+Ry <- chol(Sy)
+
+values <- numeric(length = nrep)
+prob <- numeric(length = nsim)
+
+set.seed(seed)
+
+for (i in 1:nsim) {
+  for (j in 1:nrep) {
+    
+  # Store values of t-test statistics
+  values[j] <- tStatCorr(x = "rnorm(10, 100, 10)", y = "rnorm(10, 100, 10)", Rx, Ry, pool = TRUE)
+  }
+  
+  # Calculate ratio of values above/below critical value -- this is Type I error rate
+  prob[i] <- length(values[values > crit | values < - crit]) / length(values)
+}
+
+# Return Type 1 error rate and corresponding standard error
+p <- mean(prob)
+se <- sd(prob) / sqrt(nsim)
+list(estimate = p, stdError = se)
+```
+
+### Two samples of size 10 from N(100, 10), correlation of 0.7 between samples ###
+
+```{r Example 7}
+n1 <- 10
+n2 <- 10
+rho <- 0.7
+crit <- qt(0.975, n1 + n2 - 2)
+data <- mvrnorm(n = 10000, mu = c(0, 0), Sigma = matrix(c(1^2, rho, rho, 1^2), nrow = 2), empirical = TRUE)
+#data <- mvrnorm(n = 10000, mu = c(100, 100), Sigma = matrix(c(10^2, rho*10^2, rho*10^2, 10^2), nrow = 2), empirical = TRUE)
+
+set.seed(seed)
+
+for (i in 1:nsim) {
+  for (j in 1:nrep) {
+    
+  x <- sample(data[,1], size = 10)
+  y <- sample(data[,2], size = 10)
+      
+  # values of t-test statistic
+  values[j] <- tStat(x, y, pool = TRUE)
+  }
+    
+  # probability of type 1 error
+  prob[i] <- length(values[values > crit | values < - crit]) / length(values)
+}
+  
+p <- mean(prob)
+se <- sd(prob) / sqrt(nsim)
+list(estimate = p, stdError = se)
+```
+
+
+
