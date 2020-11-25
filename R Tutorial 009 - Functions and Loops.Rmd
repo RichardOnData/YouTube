@@ -1,0 +1,186 @@
+---
+title: "R Tutorial 009: Functions and Loops"
+author: "RichardOnData"
+date: "11/25/2020"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r Load libraries and data, global options}
+library(tidyverse)
+
+dataset <- mtcars
+
+options(scipen = 3)
+options(digits = 4)
+```
+
+In this tutorial we will go over writing functions in R, as well as different ways of applying functions to every element of a vector.
+
+1) Functions
+2) Loops and control statements
+3) The `apply()` family of functions
+
+<br>
+
+### Functions ###
+
+Let's start with a fundamental premise: if you are repeating a chunk of code more than once, it is generally a good idea to write functions.   Let's see why here:
+
+```{r Create z-scores manually}
+dataset$Zdisp <- (dataset$disp - mean(dataset$disp)) / sd(dataset$disp)
+dataset$Zhp <- (dataset$hp - mean(dataset$hp)) / sd(dataset$hp)
+dataset$Zdrat <- (dataset$drat - mean(dataset$drat)) / sd(dataset$hp)
+```
+
+So there are a few problems here.   First of all, what I'm doing is fairly straightforward - all I'm doing is standardized these variables into Z-scores.   But notice that when I do this, the code isn't necessarily easy to read line-by-line, because so much text is taken up by all the variables, rather than the actual action that's taking place.   Then, maybe you noticed - there's a typo on the last line of code from copy & pasting mistakes.  This WILL happen to you if you do too much code repeating.
+
+That's why writing functions is so appealing.   Let's see how much better this looks:
+
+```{r Function example}
+dataset <- mtcars
+
+standardize <- function(x){
+  y <- (x - mean(x)) / sd(x)
+  return(y)
+}
+
+dataset$Zdisp <- standardize(dataset$disp)
+dataset$Zhp <- standardize(dataset$hp)
+dataset$Zdrat <- standardize(dataset$drat)
+```
+
+We define a function upfront that performs what we need, and then when this code overall looks a lot cleaner.   Not to mention it dramatically reduces or eliminates the chances we can make the types of errors we saw above with the "drat" variable.
+
+<br>
+
+### Loops and control statements ###
+
+Loops are a common convention in virtually all programming languages.   As a result, they are a component of the R ecosystem and a technique with some uses.   However, the use of loops should be limited as much as possible.   Let's see an example with a matrix.
+
+```{r Select variables from dataset}
+dataset <- dataset %>%
+  dplyr::select(disp, hp, drat, wt, qsec, Zdisp, Zhp, Zdrat)
+dataset
+```
+
+Let's create a new vector for column means.   We use a loop to calculate these values.
+
+```{r Use a loop to compute means}
+colMeans <- vector(length = ncol(dataset))
+
+for(i in 1:ncol(dataset)){
+  colMeans[i] = mean(dataset[,i])
+}
+
+colMeans
+```
+
+This should hopefully be fairly straightforward.   We give a name to an index "i" here that starts at 1 and goes to a maximum point, taken to be the number of columns in the dataset here.
+
+Loops are usually not the best way to deal with problems like this.   They are computationally slow, and they are prone to bugs.   Luckily, there is a wonderful family of functions in R called the `apply`.   We will return to this later.   Meanwhile, let's look at some other applications of loops. Here's an example of a nested loop.
+
+```{r Nested loop over a matrix}
+emptyMatrix <- matrix(0, nrow = 5, ncol = 5)
+
+for(i in 1:nrow(emptyMatrix)){
+  for(j in 1:ncol(emptyMatrix)){
+    emptyMatrix[i,j] <- paste0(i, ",", j)
+  }
+}
+
+emptyMatrix
+```
+
+Next, let's look at "while" loops.   These are another programming convention that can be utilized in R.   Here is a cool example... credit for this idea goes to: https://www.guru99.com/r-while-loop.html 
+
+```{r While loop example}
+stock <- 300   #Define starting value
+days <- 1 # Count number of days
+set.seed(555)
+
+while(stock < 350) {
+  stock <- stock + runif(1, -5, 20) #add random noise - generate from a Uniform(-5, 20) distribution
+  
+  days <- days + 1
+  
+  print(days)
+}
+
+stock
+```
+
+These loops can be very helpful.   Some other statements that get used in R but are less common include: "next", "repeat", and "break".
+Next, let's look at the very useful "ifelse" statement.
+
+```{r Ifelse statement example}
+Zhp <- dataset$Zhp
+HP_aboveAverage <- ifelse(Zhp >= 0, TRUE, FALSE)
+
+HP_df <- data.frame(Zhp = Zhp, HP_aboveAverage = HP_aboveAverage)
+HP_df
+```
+
+<br>
+
+### The apply() family of functions ###
+
+The `apply()` family of functions are used to perform functions in a repeated fashion.  Generally these are much faster than loops, though it should be noted they can be more challenging for newcomers to understand and read, at first.
+Let's revisit the example seen before with the "for" loop used to compute column means.
+
+```{r View dataset}
+dataset
+```
+
+The help documentation of the `apply()` function can be a little difficult to read at first.  There are three arguments: an array, a margin (1 for rows, 2 for columns), and a function to apply over that margin.   If we want column means, we simply do this...
+
+```{r apply() example}
+apply(dataset, 2, mean)
+```
+
+Simple.   We applied the `mean()` function over the columns of the "dataset" data frame (remember that data frames are types of arrays) to return this vector of means.
+
+There are many other helpful functions in this family.    The most commonly used are `lapply()` and `sapply()`, though a few of the other very useful functions are: `vapply()`, `tapply()`, `mapply()`.  Let's start by seeing an example of `lapply()`, adapted from the help documentation.
+
+```{r Initialize list}
+x <- list(a = 1:5, beta = exp(-3:3), logic = c(TRUE, FALSE, FALSE, TRUE))
+```
+
+We have a list of different vectors here.  Let's get the mean for each of these.
+
+```{r lapply() example with mean() function}
+lapply(x, mean)
+```
+
+We don't just have to apply functions that return singular values.   Let's use the `quantile()` function to return multiple quantiles.
+
+```{r lapply() example with quantile() function}
+lapply(x, quantile, probs = 1:3/4)
+```
+
+You'll notice that `lapply()` returned a list.   Where possible, the `sapply()` function alternatively will output a vector or a matrix.   Let's see the same two cases above when the `sapply()` function is called.
+
+```{r sapply() example with mean() function}
+sapply(x, mean)
+```
+
+```{r sapply() example with quantile() function}
+sapply(x, quantile, probs = 1:3/4)
+```
+
+These are some of the most useful functions in the whole R programming language.   Remember at the beginning when we created standardized versions of some different variables?   Here's a quick example of using `sapply()` to do the same thing very quickly!
+
+```{r sapply() example based on first function}
+Zmatrix <- sapply(dataset[,c("disp", "hp", "drat")], standardize)
+Zscores <- data.frame(Zmatrix)
+colnames(Zscores) <- c("Zdisp", "Zhp", "Zdrat")
+Zscores
+```
+
+The `apply()` family of functions tends to be much faster than loops, and the possibilities towards using these functions on your datasets to make your code compact are endless!
+

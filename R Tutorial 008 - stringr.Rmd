@@ -1,0 +1,173 @@
+---
+title: "R Tutorial 008: stringr"
+author: "RichardOnData"
+date: "10/25/2020"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r Load Libraries}
+library(tidyverse)
+```
+
+We will explore the "stringr" package of the tidyverse.  In this tutorial we will examine the following things:
+
+1) Character vectors/strings in R
+2) Subsetting and replacing strings
+3) Regular expressions
+
+Please note that some of the code in this tutorial was adapted from Chapter 14 of the book "R for Data Science" by Hadley Wickham and Garrett Grolemund.  The full book can be found at: https://r4ds.had.co.nz/#
+
+A good cheat sheet for stringr functions can be found at: https://rstudio.com/resources/cheatsheets/ 
+
+Another good tutorial for stringr: https://stringr.tidyverse.org/ 
+
+### Character vectors/strings in R ###
+
+Strings are created using either single or double quotes, though some care should be made if the string includes a quote.
+
+```{r Define strings}
+string1 <- "This is a string"
+string2 <- "If I want to include a 'quote' inside a string, use single quotes"
+string3 <- 'If you format a "quote" like this, it causes problems'
+```
+
+Naturally, if we concatenate different strings, we have a character vector.
+
+```{r Character vector}
+numbers <- c("one", "two", "three")
+str(numbers)
+```
+
+One of the most used functions in base R is the `paste()` function, which can be used to merge multiple text elements into one.   However, the "stringr" package provides us a family of functions beginning with the prefix `str_`.  Let's start with the `str_c()` function.   There are two distinct arguments to this function: "sep", and "collapse".
+
+```{r str_c() function}
+shamelessPlugs1 <- c("Subscribe to RichardOnData", "check out the other R tutorials")
+shamelessPlugs2 <- c("and smash the like button", "and Julia tutorials as well")
+str_c(shamelessPlugs1, shamelessPlugs2, sep = ", ")
+str_c(shamelessPlugs1, shamelessPlugs2, collapse = ", ")
+str_c(shamelessPlugs1, shamelessPlugs2, sep = " ", collapse = ", ")
+```
+
+We can look at the length of strings using the `str_length()` function.
+
+```{r str_length() function}
+str_length(shamelessPlugs1)
+```
+
+<br>
+
+### Subsetting and replacing strings ###
+
+We can subset strings using the `str_sub()` function.
+
+```{r str_sub() function}
+shamelessPlug <- "Subscribe to RichardOnData"
+str_sub(shamelessPlug, 1, 9)
+str_sub(shamelessPlug, -13, -1)
+```
+
+We have functions `str_to_upper()` and `str_to_lower()` for changing the case of our strings.   Let's see an example with `str_to_upper()`:
+
+```{r str_to_upper() function}
+str_to_upper(shamelessPlug)
+```
+
+These functions can be used for subsetting purposes as follows.  We'll make the first letter of this string lowercase.
+
+```{r Subsetting using str_to_lower() function}
+str_sub(shamelessPlug, 1, 1) <- str_to_lower(str_sub(shamelessPlug, 1, 1))
+shamelessPlug
+```
+
+We can use the `str_replace()` function for replacing matches and expressions as well.
+
+```{r}
+obviousStatement <- "I like pie"
+str_replace(obviousStatement, pattern = "like", replacement = "love")
+```
+
+<br>
+
+### Regular expressions ###
+
+The real power of "stringr" lies in the ability of the package to deal with regular expressions.   Let's create some more shameless plugs to work with regular expressions.    Before that, we'll use the `str_sort()` function.
+
+```{r str_sort() function}
+evenMoreShamelessPlugs <- c("Like", "Subscribe", "Comment")
+str_sort(evenMoreShamelessPlugs)
+```
+
+We can use the `str_view()` function to generate a view of exact matches, matches to other characters, and anchors.
+
+```{r str_view() function - exact match}
+str_view(evenMoreShamelessPlugs, "s")
+```
+
+```{r str_view() function - matches to other characters}
+str_view(evenMoreShamelessPlugs, ".e")
+str_view(evenMoreShamelessPlugs, "...e")
+str_view(evenMoreShamelessPlugs, ".e.")
+```
+
+Next, let's detect matches:
+
+```{r str_detect() function for matches}
+str_detect(evenMoreShamelessPlugs, "c")
+```
+
+We can use detection for anchors (first and last characters):
+
+```{r str_detect() function with anchors}
+str_detect(evenMoreShamelessPlugs, "^S")
+str_detect(evenMoreShamelessPlugs, "e$")
+```
+
+We can use the `str_count()` function to count occurrences of characters:
+
+```{r str_count() function}
+str_count(evenMoreShamelessPlugs, "m")
+```
+
+Next, we are going to use the built-in `words` vector to create a data frame and illustrate regular expression functionalities.   We have already utilized exact matches.    Here are some other options:
+
+* `\d`: matches any digit
+* `\s`: matches any whitespace
+* `[abc]`: matches a, b, or c
+* `[^abc]`: matches anything except a, b, or c
+* `[a|b]`: matches a or b
+
+```{r Create df}
+df <- tibble(
+  word = words
+)
+```
+
+```{r Use str_count() to get regular expression matches}
+df %>%
+  mutate(
+    vowels = str_count(word, "[aeiou]"),
+    consonants = str_count(word, "[^aeiou]"),
+    a_or_c = str_count(word, "[a|c]")
+  )
+```
+
+```{r Return words that start with "y"}
+df %>%
+  dplyr::filter(str_detect(word, "^y"))
+```
+
+```{r Return words that start with vowels}
+df %>%
+  dplyr::filter(str_detect(word, "^[aeiou]"))
+```
+
+```{r Return words that do not contain vowels}
+df %>%
+  dplyr::filter(!str_detect(word, "[aeiou]"))
+```
