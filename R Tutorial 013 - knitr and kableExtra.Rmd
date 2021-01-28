@@ -1,0 +1,171 @@
+---
+title: "R Tutorial 013: knitr and kableExtra"
+author: "RichardOnData"
+date: "1/28/2021"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r Load Libraries}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(tinytex)
+library(AER)
+
+data(CreditCard)
+cardHead <- head(CreditCard)
+```
+
+In a previous tutorial, we saw R Markdown in action, where multiple things can be created in one location: code, commentary, and output.   A point I made towards the end is that formatting tables can be an area requiring lots of focus in and of itself!   For example, calling a tibble is going to look very different than when it is passed through the "kable" function from the "knitr" package.   In this tutorial we will also explore another package which will facilitate the creation of presentation-worthy tables: "kableExtra".
+
+- A tutorial on "knitr": https://sachsmc.github.io/knit-git-markr-guide/knitr/knit.html 
+- "kableExtra" vignette: https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html 
+- A "formattable" tutorial: https://www.displayr.com/formattable/ 
+
+Let's remember what the difference is between a regular tibble and a tibble that is passed through the "kable" function.   We can do this using tidyverse syntax with the pipe operator.
+
+```{r Regular tibble}
+cardHead
+```
+
+<br>
+
+```{r Tibble with "kable"}
+cardHead %>%
+  kbl()
+```
+
+<br>
+
+Let's tweak the appearance of this with the "align" and the "caption" arguments.  
+The align argument takes a character vector with letters "l", "c", or "r" - specifying where you want the columns to be aligned.
+The caption argument gives a caption to the table.
+
+```{r Aligned kable}
+base <- cardHead %>%
+  kbl(align = c(rep("c", 7), rep("r", 5)), caption = "kable example with card data")
+base
+```
+
+<br>
+
+A key function, where we can enjoy much of the configuration for the table, is via `kable_styling()`.   We have options "bootstrap_options" or "latex_options", where the latter requires the use of the package "tinytex" and a local installation of LaTeX.   Possible options for "bootstrap_options" include 'basic', 'striped', 'bordered', 'hover', 'condensed', 'responsive', and none.    Possible for "latex_options" include 'basic', 'striped', 'hold_position', 'HOLD_position', 'scale_down', and 'repeat_header'.
+
+<br>
+
+```{r Bootstrap - striped}
+base %>%
+  kable_styling(bootstrap_options = "striped")
+```
+
+```{r Bootstrap - bordered}
+base %>%
+  kable_styling(bootstrap_options = "bordered")
+```
+
+```{r Bootstrap - hover}
+base %>%
+  kable_styling(bootstrap_options = "hover")
+```
+
+```{r Bootstrap - condensed}
+base %>%
+  kable_styling(bootstrap_options = "condensed")
+```
+
+```{r Bootstrap - responsive}
+base %>%
+  kable_styling(bootstrap_options = "responsive")
+```
+
+The bootstrap options are not mutually exclusive.   Let's put them all together!
+
+```{r Bootstrap - all}
+base %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover", "condensed", "responsive"))
+```
+
+There are style functions we can use other than `kable_styling()`.   These are: `kable_classic()`, `kable_classic_2()`, `kable_material`, `kable_material_dark()`, `kable_minimal()`, and `kable_paper()`, with key argument `lighttable_options`.   You can pass the same `kable_styling()` arguments to these other functions.  Let's see examples.   Along the way, we will also try changing font and font size.
+
+<br>
+
+```{r Classic - basic}
+base %>%
+  kable_classic("basic")
+```
+
+```{r Classic2 - hover}
+base %>%
+  kable_classic_2("hover")
+```
+
+```{r Material - basic}
+base %>%
+  kable_material("basic", font_size = 12, html_font = "sans")
+```
+
+```{r Material dark - basic}
+base %>%
+  kable_material_dark("basic", font_size = 10)
+```
+
+```{r Minimal - striped}
+base %>%
+  kable_minimal("striped", html_font = "verdana")
+```
+
+```{r Paper - striped}
+base %>%
+  kable_paper("striped", html_font = "helvetica")
+```
+
+<br>
+
+Next, we can customize the look and feel of particular rows and columns.    Let's see an example here, where we make the last three rows blue.
+
+```{r Column and row customizing}
+base %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  column_spec(8:12, bold = T) %>%
+  row_spec(4:6, italic = T, color = "gold", background = "blue")
+```
+
+An alternative approach is that we can group rows:
+
+```{r Row packing}
+base %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  pack_rows("Group 1", 3, 5, color = "green") %>%
+  pack_rows("Group 2", 6, 6, color = "red")
+```
+
+We can also create groups for our columns.
+
+```{r}
+base %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  add_header_above(c("Group 1" = 4, "Group 2" = 2, "Group 3" = 6))
+```
+
+
+Alternatively we can format our columns.
+
+```{r Column formatting}
+base %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  column_spec(5, color = spec_color(cardHead$share[1:6], end = 0.7)) %>%
+  column_spec(6, color = "white",
+              background = spec_color(cardHead$expenditure[1:6], begin = 0.3, end = 0.8,
+                                      option = "C"))
+```
+
+
+You get the idea of the capabilities in the "knitr" and "kableExtra" packages.
+There is another very nice package for formatting tables, appropriately called "formattable".  I personally do not like it quite as much as "kableExtra" because the syntax is a little more cumbersome and difficult to remember, but a link will be included at the top of the tutorial.
+
