@@ -1,0 +1,50 @@
+---
+title: "When Should You Use Regression Methods"
+author: "RichardOnData"
+date: "4/8/2021"
+output: 
+  html_document:
+    code_folding: "show"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r Load libraries and data}
+library(tidyverse)
+
+mpg <- mpg
+
+options(digits = 3)
+options(scipen = 3)
+```
+  
+### Regression premise ###
+
+Let’s start from the premise that we have a dataset where every row is an observation, every column has a variable, and every cell has a value.   That is, you have “tidy” data.
+
+Then let’s suppose we have one variable that represents some kind of “outcome” or “response” that we care about.   We’ll typically represent that with the letter Y.  
+
+That outcome variable might be continuous or discrete.    If it’s continuous, then you’re looking at using linear regression.  If it’s discrete though, well then that gets a little trickier.    If it has TWO distinct outcomes, then you can call one of those outcomes “success” and the other “failure”, and then your dataset is a candidate for binomial logistic regression, which is often referred to as just “logistic regression”.   We’ll cover that more in a bit here.   If you have more than two outcomes then you have an extension in “multinomial logistic regression”, and there are ways to set that problem up depending on if the response variable is nominal or ordinal.
+
+But anyway, back to the rest of the dataset.   So we have a response variable.    Then the rest of our variables can be called explanatory variables, predictors, covariates, features…. They have a lot of different names, my favorite is predictors.   Call these the X’s.
+
+And in fact, for now let’s say we just have two variables – one response variable Y and one explanatory variable X.   Let's see an example using the simple "mpg" dataset from R.  Well, suppose you want to understand the relationship between those two variables.   The first thing you’re probably gonna do is create a scatterplot of them. 
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy)) +
+  ggtitle("MPG") + theme(plot.title = element_text(size = 14, 
+    face = "bold", hjust = 0.5), panel.background = element_rect(fill = NA))
+```
+
+```{r}
+lm <- lm(formula = hwy ~ displ, data = mpg)
+print(summary(lm),digits=4)
+```
+
+```{r}
+lm <- lm(formula = hwy ~ displ + cyl + drv + class, data = mpg)
+print(summary(lm),digits=4)
+```
